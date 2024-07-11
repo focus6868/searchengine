@@ -1,0 +1,40 @@
+server:
+  port: 8085
+
+spring:
+  datasource:
+    username: skillbox
+    password: skillbox
+    url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
+
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+indexing-settings:
+  sites:
+    - url: https://www.sendel.ru
+      name: sendel.ру
+    - url: https://www.svetlovka.ru
+      name: svetlovka.ru
+    - url: https://dombulgakova.ru
+      name: dombulgakova.ru
+    - url: https://ipfran.ru
+      name: ipfran.ru
+
+logging:
+  level:
+    root: info
+
+doc-settings:
+  parameters:
+    - name: agent
+      value: mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (HTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3
+    - name: referer
+      value: http://www.google.com
+    - name: timeout
+      value: 20000
