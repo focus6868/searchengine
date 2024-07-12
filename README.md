@@ -66,6 +66,7 @@
 ```
 sudo pacman -S maven
 ```
+- устанавливаем библиотеки в локальный репозиторий maven
 ```
 1
 mvn install:install-file -Dfile=./1_IdeaProjects/searchengine/libs/dictionary-reader-1.5.jar -DgroupId=org.apache.lucene.morphology -DartifactId=
