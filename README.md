@@ -106,3 +106,8 @@ mvn install:install-file -Dfile=./1_IdeaProjects/searchengine/libs/russian-1.5.j
    <version>1.5</version>
 </dependency>
 ```
+Теперь собранный .jar - файл приложения дожен запуститься
+Также перед запуском приложения не забудьте убедиться что сервис mysql запущен. Запустить чсервис можно так:
+```
+sudo systemctl start mysql
+```
