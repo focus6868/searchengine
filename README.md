@@ -40,7 +40,7 @@
       ```
       ~/.jdks/corretto-17.0.11/bin/java -jar ~/1_IdeaProjects/searchengine/target/SearchEngine-1.0-SNAPSHOT.jar
       ```
-   - 3 Установить систему управления базами данных mysql. Запустить сервис mysql можно так:
+   - 3 Установить систему управления базами данных mysql. Запустить сервис mysql. Сделать это поможет команда:
 ```
 sudo systemctl start mysql
 ```
