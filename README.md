@@ -48,9 +48,9 @@
           password: [password]
           url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
      ```
-   - Указать номер порта в application.yml, на котором наше приложение будет слушать запросы от браузера(по умолчанию указан 8085).
-   - Достать из репозитория  jar-файл приложения, файл application.yml
-   - Положить оба файла в одну папаку. Для запуска приложения выполнить команду ниже(необходимо предварительно отредактировать пути к файлам java и к SearchEngine-1.0-SNAPSHOT.jar)
+   - 3 Указать номер порта в application.yml, на котором наше приложение будет слушать запросы от браузера(по умолчанию указан 8085).
+   - 4 Достать из репозитория  jar-файл приложения, файл application.yml. Оба файла должны находиться в одной папке. 
+   - 5 Для запуска приложения выполнить команду ниже(необходимо предварительно отредактировать пути к файлам java и к SearchEngine-1.0-SNAPSHOT.jar)
      ```
       ~/.jdks/corretto-17.0.11/bin/java -jar ~/1_IdeaProjects/searchengine/target/SearchEngine-1.0-SNAPSHOT.jar
      ```
