@@ -37,9 +37,6 @@
 
    - 1 Достать из репозитория  jar-файл приложения, файл application.yml
    - 2 Положить оба файла в одну папаку и запустить команду ниже(необходимо отредактировать пути к файлам java и к SearchEngine-1.0-SNAPSHOT.jar)
-     ```
-      ~/.jdks/corretto-17.0.11/bin/java -jar ~/1_IdeaProjects/searchengine/target/SearchEngine-1.0-SNAPSHOT.jar
-     ```
    - 3 Установить систему управления базами данных mysql. Запустить сервис mysql. Сделать это поможет команда:
      ```
      sudo systemctl start mysql
@@ -53,8 +50,14 @@
           password: [password]
           url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
      ```
-   - Указать номер порта  в application.yml, на котором наше приложение будет слушать запросы от браузера(по умолчанию указан 8085). И запустить приложение командой localhost:[номер порта] без квадратных скобок.
-
+   - Указать номер порта в application.yml, на котором наше приложение будет слушать запросы от браузера(по умолчанию указан 8085). И запустить приложение командой:
+     ```
+      ~/.jdks/corretto-17.0.11/bin/java -jar ~/1_IdeaProjects/searchengine/target/SearchEngine-1.0-SNAPSHOT.jar
+     ```
+   - Дождаться запуска вэб-приложения, запустить браузер и в строке адреса набрать:
+     ```
+     localhost:[номер порта] без квадратных скобок.
+     ```
 
 ## 4. Инструкция по по сборке jar-файла приложения
 
