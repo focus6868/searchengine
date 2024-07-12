@@ -53,9 +53,29 @@
    - Указать номер порта в application.yml(по умолчанию указан 8085), на котором должно запускаться приложение.И запустить приложение командой localhost:[номер порта] без квадратных скобок.
 
 
-     ## 4. Инструкция по по сборке jar-файла приложения
+## 4. Инструкция по по сборке jar-файла приложения
 
 Эта иснструкция для тех, кто пожелает самостоятельно собрать jar-файл
 Поскольку глобальный репозиторий maven не работает и через него подключить библитеку Lucene не возможности, необходимо все библиотеки подключить через локальный репозиторий. 
-   ### Инструкция:
-#### - Добавление библиотек Lucene в локальный репозиторий Maven
+   ### Инструкция
+#### - Добавление библиотек Lucene в локальный репозиторий Maven:
+- Устанавливаем maven (команда для ArchLinux)
+```
+sudo pacman -S maven
+```
+#### - Устанавливаем в локальный репозиторий maven библиотеки:
+```
+1
+mvn install:install-file -Dfile=./1_IdeaProjects/searchengine/libs/dictionary-reader-1.5.jar -DgroupId=org.apache.lucene.morphology -DartifactId=
+dictionary-reader -Dversion=1.5 -Dpackaging=jar
+2 
+mvn install:install-file -Dfile=./1_IdeaProjects/searchengine/libs/english-1.5.jar -DgroupId=org.apache.lucene.morphology -DartifactId=english -Dversion=1.5 -Dpackaging=jar
+3 
+mvn install:install-file -Dfile=./1_IdeaProjects/searchengine/libs/morph-1.5.jar -DgroupId=org.apache.lucene.morphology -DartifactId=morph -Dversion=1.5 -Dpackaging=jar
+4 
+mvn install:install-file -Dfile=./1_IdeaProjects/searchengine/libs/morphology-1.5.jar -DgroupId=org.apache.lucene.morphology -DartifactId=morphology -Dversion=1.5 -Dpackaging=jar
+5 
+mvn install:install-file -Dfile=./1_IdeaProjects/searchengine/libs/russian-1.5.jar
+ -DgroupId=org.apache.lucene.morphology -DartifactId= russian -Dversion=1.5 -Dpackaging=jar
+```
+
