@@ -63,7 +63,6 @@
 ```
 sudo pacman -S maven
 ```
-#### - Устанавливаем в локальный репозиторий maven библиотеки:
 ```
 1
 mvn install:install-file -Dfile=./1_IdeaProjects/searchengine/libs/dictionary-reader-1.5.jar -DgroupId=org.apache.lucene.morphology -DartifactId=
@@ -79,3 +78,31 @@ mvn install:install-file -Dfile=./1_IdeaProjects/searchengine/libs/russian-1.5.j
  -DgroupId=org.apache.lucene.morphology -DartifactId=russian -Dversion=1.5 -Dpackaging=jar
 ```
 
+#### - Добавляем зависимости в POM.XML
+```
+<dependency>
+   <groupId>org.apache.lucene.morphology</groupId>
+   <artifactId>morph</artifactId>
+   <version>1.5</version>
+</dependency>
+<dependency>
+   <groupId>org.apache.lucene.analysis</groupId>
+   <artifactId>morphology</artifactId>
+   <version>1.5</version>
+</dependency>
+<dependency>
+   <groupId>org.apache.lucene.morphology</groupId>
+   <artifactId>dictionary-reader</artifactId>
+   <version>1.5</version>
+</dependency>
+<dependency>
+   <groupId>org.apache.lucene.morphology</groupId>
+   <artifactId>english</artifactId>
+   <version>1.5</version>
+</dependency>
+<dependency>
+   <groupId>org.apache.lucene.morphology</groupId>
+   <artifactId>russian</artifactId>
+   <version>1.5</version>
+</dependency>
+```
