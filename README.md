@@ -25,8 +25,8 @@
 ## 2. Стек используемых технологий
 
    - Spring boot
-	- Java Collection
-	- Java Concurrency
-	- Hibernate 
-	- JPA
+   - Java Collection
+   - Java Concurrency
+   - Hibernate 
+   - JPA
 
