@@ -44,3 +44,4 @@
           password: [password]
           url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
       ```
+   - Указать номер порта в application.yml(по умолчанию указан 8085), на котором должно запускаться приложение.И запустить приложение командой localhost:[номер порта] без квадратных скобок. 
