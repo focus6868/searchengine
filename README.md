@@ -29,4 +29,18 @@
    - Java Concurrency
    - Hibernate 
    - JPA
+## 3. Инструкция по локальному запуску проекта
 
+   - 1 Достать из репозитория  jar-файл приложения, файл application.yml
+   - 2 Положить оба файла в одну папаку и запустить команду ниже(необходимо отредактировать пути к файлам java и к SearchEngine-1.0-SNAPSHOT.jar) команды ниже.
+~/.jdks/corretto-17.0.11/bin/java -jar ~/1_IdeaProjects/searchengine/target/SearchEngine-1.0-SNAPSHOT.jar
+   - 3 Установить систему управления базами данных mysql.
+   - 4 Настроить файл конфигурации приложения application.yml:
+       - указать логин, пароль и номер порта (обычно это порт 3306) как показано ниже:
+      ```
+      spring:
+        datasource:
+          username: [username]
+          password: [password]
+          url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
+      ```
