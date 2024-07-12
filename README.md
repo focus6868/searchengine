@@ -76,6 +76,6 @@ mvn install:install-file -Dfile=./1_IdeaProjects/searchengine/libs/morph-1.5.jar
 mvn install:install-file -Dfile=./1_IdeaProjects/searchengine/libs/morphology-1.5.jar -DgroupId=org.apache.lucene.morphology -DartifactId=morphology -Dversion=1.5 -Dpackaging=jar
 5 
 mvn install:install-file -Dfile=./1_IdeaProjects/searchengine/libs/russian-1.5.jar
- -DgroupId=org.apache.lucene.morphology -DartifactId= russian -Dversion=1.5 -Dpackaging=jar
+ -DgroupId=org.apache.lucene.morphology -DartifactId=russian -Dversion=1.5 -Dpackaging=jar
 ```
 
