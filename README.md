@@ -40,7 +40,10 @@
       ```
       ~/.jdks/corretto-17.0.11/bin/java -jar ~/1_IdeaProjects/searchengine/target/SearchEngine-1.0-SNAPSHOT.jar
       ```
-   - 3 Установить систему управления базами данных mysql.
+   - 3 Установить систему управления базами данных mysql. Запустить сервис mysql можно так:
+```
+sudo systemctl start mysql
+```
    - 4 Настроить файл конфигурации приложения application.yml:
        - указать логин, пароль и номер порта (обычно это порт 3306) как показано ниже:
       ```
@@ -107,7 +110,4 @@ mvn install:install-file -Dfile=./1_IdeaProjects/searchengine/libs/russian-1.5.j
 </dependency>
 ```
 Теперь собранный .jar - файл приложения дожен запуститься
-Также перед запуском приложения не забудьте убедиться что сервис mysql запущен. Запустить чсервис можно так:
-```
-sudo systemctl start mysql
-```
+Также перед запуском приложения не забудьте убедиться что сервис mysql запущен.
