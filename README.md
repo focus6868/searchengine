@@ -95,34 +95,6 @@ mvn install:install-file -Dfile=./1_IdeaProjects/searchengine/libs/russian-1.5.j
  -DgroupId=org.apache.lucene.morphology -DartifactId=russian -Dversion=1.5 -Dpackaging=jar
 ```
 
-#### - Добавляем зависимости в POM.XML
-```
-<dependency>
-   <groupId>org.apache.lucene.morphology</groupId>
-   <artifactId>morph</artifactId>
-   <version>1.5</version>
-</dependency>
-<dependency>
-   <groupId>org.apache.lucene.analysis</groupId>
-   <artifactId>morphology</artifactId>
-   <version>1.5</version>
-</dependency>
-<dependency>
-   <groupId>org.apache.lucene.morphology</groupId>
-   <artifactId>dictionary-reader</artifactId>
-   <version>1.5</version>
-</dependency>
-<dependency>
-   <groupId>org.apache.lucene.morphology</groupId>
-   <artifactId>english</artifactId>
-   <version>1.5</version>
-</dependency>
-<dependency>
-   <groupId>org.apache.lucene.morphology</groupId>
-   <artifactId>russian</artifactId>
-   <version>1.5</version>
-</dependency>
-```
 Создаем jar с помощью maven. Теперь собранный .jar - файл приложения дожен запуститься.
 Также перед запуском приложения не забудьте убедиться, что сервис mysql запущен, для этого воспользуйтесь командой sudo systemctl status mysql
 .
