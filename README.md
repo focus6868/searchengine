@@ -48,6 +48,17 @@
           password: [password]
           url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
      ```
+      - в вашей базе данных (у меня это search_engine) создать прцедуру:
+      ```
+      CREATE DEFINER=`skillbox`@`localhost` PROCEDURE `search_engine`.`proc_tuncate_sites`()
+       DETERMINISTIC
+         BEGIN
+         	SET FOREIGN_KEY_CHECKS=0;
+         	TRUNCATE TABLE sites;
+         	TRUNCATE TABLE pages;
+         	SET FOREIGN_KEY_CHECKS=1;
+         END
+      ```
    - 3 Указать номер порта в application.yml, на котором наше приложение будет слушать запросы от браузера(по умолчанию указан 8085).
    - 4 Достать из репозитория  jar-файл приложения, файл application.yml. Оба файла должны находиться в одной папке. 
    - 5 Для запуска приложения выполнить команду ниже(необходимо предварительно отредактировать пути к файлам java и к SearchEngine-1.0-SNAPSHOT.jar)
