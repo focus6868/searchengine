@@ -32,7 +32,7 @@ public class SitePagesRecursTask extends RecursiveTask<List<PageDto>>{
     @Override
     protected ArrayList<PageDto> compute() {
 
-        ConnectApp connectApp = new ConnectApp();
+        ConnectionApp connectionApp = new ConnectionApp();
         ArrayList<PageDto> pagesList = new ArrayList<>();
         ArrayList<SitePagesRecursTask> taskList = new ArrayList<>();
         Pattern pattern = Pattern.compile("(/[a-zA-Z0-9\\-_а-я?=%]+)+[\\.html]{0,5}");
@@ -41,7 +41,7 @@ public class SitePagesRecursTask extends RecursiveTask<List<PageDto>>{
 
         Document doc = null;
         try {
-            doc = connectApp.getDocument(path);
+            doc = connectionApp.getDocument(path);
         } catch (IOException e) {
             log.info("ОШИБКА при вызове doc = getDocument(path) : " + path + " pathWithoutWWW " + pathWithoutWWW);
         }
@@ -51,7 +51,7 @@ public class SitePagesRecursTask extends RecursiveTask<List<PageDto>>{
         if(doc != null) {
             pagesList.add(getPage(
                     pathClear.isEmpty() ? "/" : pathClear
-                    , connectApp.statusCode(path)
+                    , connectionApp.statusCode(path)
                     , doc.html().replaceAll("'", "\"")
                     , siteID)
             );
@@ -73,12 +73,12 @@ public class SitePagesRecursTask extends RecursiveTask<List<PageDto>>{
                     int code = 200;
 
                     try {
-                        Document document = connectApp.getDocument(absUrlClear);
+                        Document document = connectionApp.getDocument(absUrlClear);
                         content = document.html();
                         content = content.replaceAll("'", "\"");
 
                         if(content.isEmpty()){
-                            code = connectApp.statusCode(absUrlClear);
+                            code = connectionApp.statusCode(absUrlClear);
                         }
 
                         pagesList.add(getPage(pathWithoutHttp, code, content, siteID));

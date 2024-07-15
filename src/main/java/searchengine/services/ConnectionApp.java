@@ -18,7 +18,7 @@ import java.sql.SQLException;
 @Service
 @Getter
 @Setter
-public class ConnectApp {
+public class ConnectionApp {
 
     private final String dbName = "search_engine";
     private final String bdUser = "skillbox";
@@ -69,7 +69,7 @@ public class ConnectApp {
                 statusCode = response.statusCode();
             }
         } catch (IOException e) {
-            System.out.println("io + "+e);
+            System.out.println("io __ "+e);
         }
         return statusCode;
     }

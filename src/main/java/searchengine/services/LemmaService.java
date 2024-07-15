@@ -49,10 +49,10 @@ public class LemmaService {
 
     public ResponseEntity<?> IndexOnePage(String path){
 
-        ConnectApp connectApp = new ConnectApp();
+        ConnectionApp connectionApp = new ConnectionApp();
         TreeMap<String, Integer> indexPageList = new TreeMap<>();
-        String urlHead = path.replaceAll(connectApp.getUrlPatternTail(),"");
-        String urlTail = path.replaceAll(connectApp.getUrlPatternHead(),"");
+        String urlHead = path.replaceAll(connectionApp.getUrlPatternTail(),"");
+        String urlTail = path.replaceAll(connectionApp.getUrlPatternHead(),"");
         StringBuilder sqlString = new StringBuilder();
         SiteEntity siteEntity = null;
         String sql;
@@ -77,15 +77,15 @@ public class LemmaService {
             List<Lemma> lemmaRepositoryAll = lemmaRepository.findAllBySiteEntityId(siteId);
 
             try {
-                doc = connectApp.getDocument(path);
+                doc = connectionApp.getDocument(path);
             } catch (IOException e) {
-                return connectApp.throwException();
+                return connectionApp.throwException();
             }
 
                 indexRepository.deleteByPageId(pageId);
                 pageRepository.deleteById(pageId);
 
-            statusCode = connectApp.statusCode(path);
+            statusCode = connectionApp.statusCode(path);
             Page page = new Page();
             page.setContent(doc.html());
             page.setCode(statusCode);
@@ -129,7 +129,7 @@ public class LemmaService {
                 if(!sqlString.isEmpty()){
                     sql = "insert into lemmas (frequency, lemma) values" + sqlString;
                     log.info("====== S Q L ======= " + sql);
-                    connectApp.execSql(sql);
+                    connectionApp.execSql(sql);
                 }
 
                 StringBuilder newSqlString = new StringBuilder();
@@ -144,7 +144,7 @@ public class LemmaService {
                 });
 
                 sql = "insert into indices (lemma_id, page_id, rank) values" + newSqlString;
-                connectApp.execSql(sql);
+                connectionApp.execSql(sql);
 
                 log.info("======= ПРОВЕРЬ ВСТАВИЛОСЬ ЛИ В БД ========  : ");
 

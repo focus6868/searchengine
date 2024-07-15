@@ -46,7 +46,7 @@ public class ThreadParseSite extends Thread {
         Logger log = Logger.getLogger(ThreadParseSite.class.getName());
         insertQuery = new StringBuilder();
         LinkChecker linkChecker = new LinkChecker();
-        ConnectApp connectApp = new ConnectApp();
+        ConnectionApp connectionApp = new ConnectionApp();
 
 
         SiteEntity site = ThreadParseSitesRunnerService.sitesEntityMap.get(pathWithoutWWW);
@@ -77,12 +77,12 @@ public class ThreadParseSite extends Thread {
                             .append(siteId)
                             .append("')");
                 if (insertQuery.length() >= 1000000) {
-                    connectApp.execSql("insert into pages(`code`, content, `path`, site_entity_id) values" + insertQuery);
+                    connectionApp.execSql("insert into pages(`code`, content, `path`, site_entity_id) values" + insertQuery);
                     insertQuery = new StringBuilder();
                 }
             }
             if(!insertQuery.isEmpty()){
-                connectApp.execSql("insert into pages(`code`, content, `path`, site_entity_id) values" + insertQuery);
+                connectionApp.execSql("insert into pages(`code`, content, `path`, site_entity_id) values" + insertQuery);
             }
         } catch (Exception e){
             e.printStackTrace();
@@ -139,13 +139,13 @@ public class ThreadParseSite extends Thread {
                     .append(siteId)
                     .append("')");
             if (insertQuery.length() >= 1000000) {
-                connectApp.execSql("insert into lemmas(lemma, frequency, site_entity_id) values" + insertQuery);
+                connectionApp.execSql("insert into lemmas(lemma, frequency, site_entity_id) values" + insertQuery);
                 insertQuery = new StringBuilder();
             }
         }
 
         if(!insertQuery.isEmpty()){
-            connectApp.execSql("insert into lemmas(lemma, frequency, site_entity_id) values" + insertQuery);
+            connectionApp.execSql("insert into lemmas(lemma, frequency, site_entity_id) values" + insertQuery);
         }
         log.info(" ==== INSERTION TO LEMMA ===== complete");
 
@@ -177,13 +177,13 @@ public class ThreadParseSite extends Thread {
                     .append(item.getRank())
                     .append("')");
             if (insertQuery.length() >= 1000000) {
-                connectApp.execSql("insert into indices(lemma_id, page_id, rank) values" + insertQuery);
+                connectionApp.execSql("insert into indices(lemma_id, page_id, rank) values" + insertQuery);
                 insertQuery = new StringBuilder();
             }
         }
 
         if(!insertQuery.isEmpty()){
-            connectApp.execSql("insert into indices(lemma_id, page_id, rank) values" + insertQuery);
+            connectionApp.execSql("insert into indices(lemma_id, page_id, rank) values" + insertQuery);
         }
 
         site.setStatus(Status.INDEXED);
