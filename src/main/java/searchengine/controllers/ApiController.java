@@ -3,13 +3,11 @@ package searchengine.controllers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import searchengine.dto.search.SearchResult;
 import searchengine.dto.statistics.StatisticsResponse;
-import searchengine.services.LemmaService;
-import searchengine.services.SearchingByQuery;
+import searchengine.services.SearchingByQueryService;
 import searchengine.services.ThreadParseSitesRunnerService;
 import searchengine.services.StatisticsServiceImpl;
 
@@ -19,10 +17,9 @@ import java.io.IOException;
 @RequestMapping("/api")
 public class ApiController {
 
-    private static final Logger log = LoggerFactory.getLogger(ApiController.class.getName());
     private final StatisticsServiceImpl statisticsService;
     @Autowired
-    private SearchingByQuery searchingByQuery;
+    private SearchingByQueryService searchingByQueryService;
     @Autowired
     private ThreadParseSitesRunnerService threadIndexingRunnerService;
 
@@ -52,9 +49,9 @@ public class ApiController {
 
     @GetMapping("/search")
     public SearchResult search(@RequestParam String query
-            , @RequestParam int offset
-            , @RequestParam int limit
+            , @RequestParam(defaultValue = "0", required = false) int offset
+            , @RequestParam(defaultValue = "20", required = false) int limit
             , @RequestParam(value = "site", required = false) String site) throws IOException {
-        return searchingByQuery.search(query, 2, 8, site);
+        return searchingByQueryService.search(query, 5, 5, site);
     }
 }

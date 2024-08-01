@@ -1,8 +1,5 @@
 package searchengine.services;
 
-/*import org.apache.lucene.morphology.LuceneMorphology;
-import org.apache.lucene.morphology.russian.RussianLuceneMorphology;*/
-
 import java.io.IOException;
 import java.util.*;
         import java.util.logging.Logger;
@@ -14,7 +11,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.springframework.beans.factory.annotation.Autowired;
         import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
+import searchengine.config.RequestResultError;
 import searchengine.config.RequestResultSuccess;
         import searchengine.model.Lemma;
 import searchengine.model.Page;
@@ -23,11 +21,13 @@ import searchengine.repository.IndexRepository;
 import searchengine.repository.LemmaRepository;
 import searchengine.repository.PageRepository;
 import searchengine.repository.SiteEntityRepository;
+import searchengine.util.ConnectionApp;
 
-@Service
+@Component
 public class LemmaService {
 
-    private static final List<String> particlesNames = Arrays.stream((new String[]{"МЕЖД", "ПРЕДЛ", "СОЮЗ"})).toList();
+    private static final List<String> particlesNamesRu = new ArrayList<>(List.of("МЕЖД", "ПРЕДЛ", "СОЮЗ"));
+    private static final List<String> particlesNamesEn = new ArrayList<>(List.of("ARTICLE", "PN"));
 
     @Autowired
     private SiteEntityRepository siteEntityRepository;
@@ -37,6 +37,8 @@ public class LemmaService {
     private IndexRepository indexRepository;
     @Autowired
     LemmaRepository lemmaRepository;
+    @Autowired
+    ConnectionApp connectionApp;
     LuceneMorphology luceneMorphRus;
     LuceneMorphology luceneMorphEng;
 
@@ -47,133 +49,105 @@ public class LemmaService {
         luceneMorphEng = new EnglishLuceneMorphology();
     }
 
-    public ResponseEntity<?> IndexOnePage(String path){
+    public ResponseEntity<?> IndexOnePage(String path) throws IOException {
 
-        ConnectionApp connectionApp = new ConnectionApp();
         TreeMap<String, Integer> indexPageList = new TreeMap<>();
-        String urlHead = path.replaceAll(connectionApp.getUrlPatternTail(),"");
-        String urlTail = path.replaceAll(connectionApp.getUrlPatternHead(),"");
-        StringBuilder sqlString = new StringBuilder();
+        String urlHead = path.replaceAll(connectionApp.getUrlPatternHead(),"");
+        String urlTail = path.replaceAll(connectionApp.getUrlPatternTail(),"");
         SiteEntity siteEntity = null;
-        String sql;
         Long pageId = 0L;
         Long siteId = 0L;
-        int statusCode;
 
         List<SiteEntity> sites = siteEntityRepository.findByUrl(urlHead);
+        List<Page> pages = pageRepository.findByPath(urlTail);
 
-        Document doc;
+        if (!sites.isEmpty() && !pages.isEmpty()) {
 
-        if (!sites.isEmpty()) {
+            siteEntity = sites.get(0);
+            siteId = siteEntity.getId();
+            pageId = pages.get(0).getId();
 
-            List<Page> pages = pageRepository.findByPath(urlTail);
-
-            if (sites.stream().findFirst().isPresent()) {
-                siteEntity = sites.stream().findFirst().get();
-                siteId = siteEntity.getId();
-            }
-            if (pages.stream().findFirst().isPresent()) { pageId = pages.stream().findFirst().get().getId(); }
+            indexRepository.deleteByPageId(pageId);
+            pageRepository.deleteById(pageId);
 
             List<Lemma> lemmaRepositoryAll = lemmaRepository.findAllBySiteEntityId(siteId);
 
-            try {
-                doc = connectionApp.getDocument(path);
-            } catch (IOException e) {
-                return connectionApp.throwException();
+            Page page = createPage(siteEntity, urlTail, path);
+            String pageText = Jsoup.parse(page.getContent()).text();
+            indexPageList.putAll(getLemmas(pageText));
+            List<String> lemmaGotList = indexPageList.keySet().stream().toList();
+
+                insertToLemmas(lemmaGotList, lemmaRepositoryAll);
+
+                insertToIndex(indexPageList, lemmaGotList, siteId, pageId);
+
+        } else{
+            return ResponseEntity.ofNullable(new RequestResultError("Запрошенная страница находится за пределами доступных сайтов"));
+        }
+        return ResponseEntity.ok(new RequestResultSuccess(true));
+    }
+
+    private void insertToLemmas(List<String> lemmaGotList , List<Lemma> lemmaRepositoryAll) throws IOException {
+        StringBuilder sqlString = new StringBuilder();
+        String sql;
+
+        lemmaRepositoryAll.stream().forEach(lr -> {
+            if(lemmaGotList.contains(lr.getLemma())){
+                lr.setFrequency(lr.getFrequency() - 1);
+                lemmaRepository.save(lr);
             }
+        });
 
-                indexRepository.deleteByPageId(pageId);
-                pageRepository.deleteById(pageId);
+        for(String gotLemma: lemmaGotList){
+            if (lemmaRepositoryAll.stream().map(Lemma::getLemma).toList().contains(gotLemma)){
+                List<Lemma> lemmaList = lemmaRepositoryAll.stream().filter(l -> l.getLemma().equals(gotLemma)).toList();
+                Lemma lemma = lemmaList.stream().findFirst().get();
+                lemma.setFrequency(lemma.getFrequency() + 1);
+                lemmaRepository.save(lemma);
+            } else {
+                if(!sqlString.isEmpty()) {
+                    sqlString.append(",");
+                }
+                sqlString.append("(").append(1).append(",\"").append(gotLemma).append("\")");
+            }
+        }
+        if(!sqlString.isEmpty()){
+            sql = "insert into lemmas (frequency, lemma) values" + sqlString;
+            connectionApp.execSql(sql);
+        }
+    }
 
-            statusCode = connectionApp.statusCode(path);
-            Page page = new Page();
+    private Page createPage(SiteEntity siteEntity, String urlTail, String path) throws IOException {
+
+        Page page;
+            Document doc = connectionApp.getDocument(path);
+            int statusCode = connectionApp.statusCode(path);
+            page = new Page();
             page.setContent(doc.html());
             page.setCode(statusCode);
             page.setPath(urlTail);
             page.setSiteEntity(siteEntity);
             pageRepository.save(page);
 
-            try {
-                log.info(" ======= GET_LEMMAS ======== : ");
-
-                String pageText = Jsoup.parse(page.getContent()).text();
-
-                indexPageList.putAll(getLemmas(pageText));
-
-                List<String> lemmaGotList = indexPageList.keySet().stream().toList();
-                List<Lemma> lemmaBdList = lemmaRepositoryAll.stream().filter(l -> {
-                    return lemmaGotList.contains(l.getLemma());
-                }).toList();
-
-                lemmaRepositoryAll.stream().forEach(lr -> {
-                    if(lemmaGotList.contains(lr.getLemma())){
-                        lr.setFrequency(lr.getFrequency() - 1);
-                        lemmaRepository.save(lr);
-                    }
-                });
-
-                for(String gotLemma: lemmaGotList){
-                    if (lemmaRepositoryAll.stream().map(Lemma::getLemma).toList().contains(gotLemma)){
-                        List<Lemma> lemmaList = lemmaRepositoryAll.stream().filter(l -> l.getLemma().equals(gotLemma)).toList();
-                        Lemma lemma = lemmaList.stream().findFirst().get();
-                        lemma.setFrequency(lemma.getFrequency() + 1);
-                        lemmaRepository.save(lemma);
-                    } else {
-                        if(!sqlString.isEmpty()) {
-                            sqlString.append(",");
-                        }
-                        Integer rank = indexPageList.get(gotLemma);
-                        sqlString.append("(").append(1).append(",\"").append(gotLemma).append("\")");
-                    }
-                }
-                if(!sqlString.isEmpty()){
-                    sql = "insert into lemmas (frequency, lemma) values" + sqlString;
-                    log.info("====== S Q L ======= " + sql);
-                    connectionApp.execSql(sql);
-                }
-
-                StringBuilder newSqlString = new StringBuilder();
-                lemmaRepository.findAll().forEach(lemma -> {
-                    if(lemmaGotList.contains(lemma.getLemma())){
-                        if(!newSqlString.isEmpty()) {
-                            newSqlString.append(",");
-                        }
-                            int rank = indexPageList.get(lemma.getLemma());
-                            newSqlString.append("(").append(lemma.getId()).append(",").append(page.getId()).append(",").append(rank).append(")");
-                    }
-                });
-
-                sql = "insert into indices (lemma_id, page_id, rank) values" + newSqlString;
-                connectionApp.execSql(sql);
-
-                log.info("======= ПРОВЕРЬ ВСТАВИЛОСЬ ЛИ В БД ========  : ");
-
-            } catch(IOException e){
-                e.printStackTrace();
-            }
-
-        } else{
-            log.info("=== sites.isEmpty() = TRUE ===");
-        }
-        return ResponseEntity.ok(new RequestResultSuccess(true));
+        return page;
     }
 
     /** TODO HashMap<String, IndexPage>
      * 1 - ключ мэпа - Лемма, 2 - frequency ()
      */
-    public TreeMap<String, Integer> getLemmas(String pageText) throws IOException {
+    private TreeMap<String, Integer> getLemmas(String pageText) throws IOException {
         TreeMap<String, Integer> pageIndex = new TreeMap<>();
 
         getAllLemmas(pageText)
                 .stream()
                 .filter(l -> l.length()>3)
                 .forEach(item -> {
-                int frequency = 0;
-                if (!pageIndex.isEmpty()) {
-                    frequency = pageIndex.get(item) == null ? 0 : pageIndex.get(item).intValue();
-                }
-                pageIndex.put(item, frequency + 1);
-        });
+                    int frequency = 0;
+                    if (!pageIndex.isEmpty()) {
+                        frequency = pageIndex.get(item) == null ? 0 : pageIndex.get(item).intValue();
+                    }
+                    pageIndex.put(item, frequency + 1);
+                });
         return pageIndex;
     }
 
@@ -190,29 +164,38 @@ public class LemmaService {
                     .stream()
                     .filter(w -> !w.isEmpty())
                     .forEach(word -> {
-                    try {
-                        List<String> wordTypes = luceneMorphRus.getMorphInfo(word);
-                        List<String> list = particlesNames.stream().filter(wordTypes::contains).toList();
-                        if (word.length() > 3 && list.isEmpty()) {
+                        StringBuilder wTypeLine = new StringBuilder();
+                        luceneMorphRus.getMorphInfo(word).forEach(wTypeLine::append);
+                        String wordsTypesLine = wTypeLine.toString();
+                        boolean isContains = false;
+
+                        for(String pn: particlesNamesRu){
+                            if(wordsTypesLine.contains(pn)){isContains = true; break;}
+                        }
+
+                        if (word.length() > 3 && !isContains) {
                             lemmaRu.addAll(luceneMorphRus.getNormalForms(word));
                         }
-                    }catch(org.apache.lucene.morphology.WrongCharaterException ignored){
-                        System.out.println("============= GET_LEMMAS_RU_LIST ============= " + word);
-                    }
             });
         return lemmaRu;
     }
 
     public List<String> getLemmaEnList(List<String> words)  throws IOException {
         List<String> lemmaEn = new ArrayList<>();
-        words
+            words
                 .stream()
                 .filter(w -> !w.isEmpty())
                 .forEach(word -> {
-                    List<String> wordTypes = luceneMorphEng.getMorphInfo(word);
-                    List<String> list = particlesNames.stream().filter(wordTypes::contains).toList();
+                    StringBuilder wTypeLine = new StringBuilder();
+                    luceneMorphEng.getMorphInfo(word).forEach(wt -> wTypeLine.append(wt));
+                    String wordsTypesLine = wTypeLine.toString();
+                    boolean isContains = false;
 
-                    if (word.length() > 3 && list.isEmpty()) {
+                    for(String pn: particlesNamesEn){
+                        if(wordsTypesLine.contains(pn)){isContains = true; break;}
+                    }
+
+                    if (!isContains) {
                         lemmaEn.addAll(luceneMorphEng.getNormalForms(word));
                     }
                 });
@@ -222,7 +205,7 @@ public class LemmaService {
     public List<String> getWordsEn(String pageText){
         return new ArrayList<>(
                 Arrays
-                        .stream(pageText.replaceAll("[^a-zA-Z]+", " ").split("\\s+"))
+                        .stream(pageText.replaceAll("[^a-zA-ZёЁ]+", " ").split("\\s+"))
                         .filter(w -> w.trim().length() > 3)
                         .map(word -> {
                             return word.toLowerCase(Locale.ROOT);
@@ -230,10 +213,11 @@ public class LemmaService {
                         .toList()
         );
     }
+
     public List<String> getWordsRu(String pageText){
         return new ArrayList<>(
                 Arrays
-                        .stream(pageText.replaceAll("[^а-яА-Я]+", " ").split("\\s+"))
+                        .stream(pageText.replaceAll("[^а-яА-ЯёЁ]+", " ").split("\\s+"))
                         .filter(w -> w.trim().length() > 3)
                         .map(word -> {
                             return word.toLowerCase(Locale.ROOT);
@@ -241,4 +225,21 @@ public class LemmaService {
                         .toList()
         );
     }
+
+    private void insertToIndex(Map<String, Integer> indexPageList, List<String> lemmaGotList, long siteId, long pageId){
+        StringBuilder sql = new StringBuilder("insert into indices (lemma_id, page_id, rank) values ");
+        lemmaRepository.findAllBySiteEntityId(siteId).forEach(lemma -> {
+            if(lemmaGotList.contains(lemma.getLemma())){
+                if(!sql.isEmpty()) {
+                    sql.append(",");
+                }
+                int rank = indexPageList.get(lemma.getLemma());
+                sql.append("(").append(lemma.getId()).append(",").append(pageId).append(",").append(rank).append(")");
+            }
+        });
+        connectionApp.execSql(sql.toString());
+
+        log.info("======= ПРОВЕРЬ ВСТАВИЛОСЬ ЛИ В БД ========  : ");
+    }
+
 }

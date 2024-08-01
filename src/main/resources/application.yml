@@ -19,12 +19,10 @@ indexing-settings:
   sites:
     - url: https://www.sendel.ru
       name: sendel.ру
-    - url: https://www.svetlovka.ru
-      name: svetlovka.ru
-    - url: https://dombulgakova.ru
-      name: dombulgakova.ru
-    - url: https://ipfran.ru
-      name: ipfran.ru
+ #   - url: http://www.playback.ru
+ #     name: playback.ru
+    - url: https://nikoartgallery.com/
+      name: nikoartgallery.com
 
 logging:
   level:

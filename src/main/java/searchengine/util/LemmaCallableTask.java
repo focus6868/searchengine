@@ -1,7 +1,8 @@
-package searchengine.services;
+package searchengine.util;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import searchengine.services.LemmaService;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -19,20 +20,22 @@ public class LemmaCallableTask implements Callable<List<String>> {
 
     private static final Logger log = LoggerFactory.getLogger(LemmaCallableTask.class);
     String pageText;
+    String path;
     /** Количество лемм на сайте, а не на странице надо считать */
-    public LemmaCallableTask(String pageText){
+    public LemmaCallableTask(String path, String pageText){
         this.pageText = pageText;
+        this.path = path;
     }
     /** Метод возвращает список лемм для одной страницы */
     @Override
     public List<String> call() throws Exception {
         LemmaService ls = new LemmaService();
 
-        List<String> lemmaList = new ArrayList<>(ls.getLemmaRuList(ls.getWordsRu(pageText)));
+        List<String> lemmaList = new ArrayList<>();
+        lemmaList.addAll(ls.getLemmaRuList(ls.getWordsRu(pageText)));
         lemmaList.addAll(ls.getLemmaEnList(ls.getWordsEn(pageText)));
 
        return lemmaList;
     }
-
 
 }

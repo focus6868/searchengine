@@ -1,4 +1,4 @@
-package searchengine.services;
+package searchengine.util;
 
 import lombok.Getter;
 
@@ -11,5 +11,4 @@ public class LinkChecker {
     public LinkChecker() {
         this.uniqueLinks = new HashSet<>();
     }
-
 }

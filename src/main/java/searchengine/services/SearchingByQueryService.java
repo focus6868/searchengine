@@ -1,6 +1,6 @@
 package searchengine.services;
-import jakarta.persistence.criteria.CriteriaBuilder;
 import org.apache.lucene.morphology.LuceneMorphology;
+import org.apache.lucene.morphology.WrongCharaterException;
 import org.apache.lucene.morphology.english.EnglishLuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.jsoup.*;
@@ -10,6 +10,7 @@ import org.jsoup.nodes.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.converter.json.GsonBuilderUtils;
 import org.springframework.stereotype.Service;
 import searchengine.dto.LemmaDto;
 import searchengine.dto.search.Data;
@@ -22,14 +23,15 @@ import searchengine.repository.SiteEntityRepository;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
 @Setter
 @Getter
-public class SearchingByQuery {
-    private static final Logger log = LoggerFactory.getLogger(SearchingByQuery.class);
-    // Сортировка в обратном порядке
+public class SearchingByQueryService {
+    private static final Logger log = LoggerFactory.getLogger(SearchingByQueryService.class);
     @Autowired
     LemmaService lemmaService;
     @Autowired
@@ -45,17 +47,29 @@ public class SearchingByQuery {
     private String uri;
     private String title;
     private String snippet;
-    List<String> queryLemmas = new ArrayList<>();
-    List<String> wordsQuery = new ArrayList<>();
+    List<String> queryLemmas;
+    List<String> wordsQuery;
+    List<Data> dataList;
+
+    LuceneMorphology luceneMorphologyRu;
+    LuceneMorphology luceneMorphologyEn;
+
+    public SearchingByQueryService() throws IOException {
+        queryLemmas = new ArrayList<>();
+        wordsQuery = new ArrayList<>();
+        dataList = new ArrayList<>();
+        luceneMorphologyRu = new RussianLuceneMorphology();
+        luceneMorphologyEn = new EnglishLuceneMorphology();
+    }
 
     public SearchResult search(String query, int offset, int limit, String site) throws IOException {
-
+        dataList = new ArrayList<>();
         queryLemmas.clear();
         wordsQuery.clear();
 
         SearchResult searchResult = new SearchResult();
         List<Data> dataList = new ArrayList<>();
-        List<String> wdRu = new ArrayList<>(List.of(query.replaceAll("[^а-яА-Я_-]+"," ").split("\\s+")));
+        List<String> wdRu = new ArrayList<>(List.of(query.replaceAll("[^а-яА-ЯёЁ_-]+"," ").split("\\s+")));
         List<String> wdEn = new ArrayList<>(List.of(query.replaceAll("[^a-zA-Z_-]+"," ").split("\\s+")));
 
         wordsQuery.addAll(getWordsRu(wdRu));
@@ -71,30 +85,30 @@ public class SearchingByQuery {
         if(site == null){
             List<SiteEntity> siteEntityList = siteEntityRepository.findAll();
             siteEntityList.stream().filter(ss -> ss.getStatus().equals(Status.INDEXED)).forEach(s -> {
-                List<Data> dList = new ArrayList<>(searchOnes(offset, limit, s.getUrl()));
+                List<Data> dList = new ArrayList<>(searchOnes(s.getUrl()));
                 if (!dList.isEmpty()) {dataList.addAll(dList);}
             });
         }else{
-            dataList.addAll(searchOnes(offset, limit, site));
+            dataList.addAll(searchOnes(site));
         }
+
+        dataList.forEach(d -> System.out.println(d.getUri()));
 
         searchResult.setResult(!dataList.isEmpty());
         searchResult.setCount(dataList.size());
-        searchResult.setData(dataList);
+        searchResult.setData(dataList.subList(0, Integer.min(dataList.size(),limit)));
 
         return searchResult;
     }
 
-    public List<Data> searchOnes(int offset, int limit, String site) {
+    public List<Data> searchOnes(String site) {
 
         SiteEntity siteEntity = siteEntityRepository.findByUrl(site).stream().findFirst().get();
         long siteId = siteEntity.getId();
-        List<Data> dataList = new ArrayList<>();
 
         List<LemmaDto> queryLemmasSorted = new ArrayList<>(getSortedLemmas(siteId));
-        long start = System.currentTimeMillis();
+
         if (!queryLemmasSorted.isEmpty()) {
-            start = System.currentTimeMillis();
             List<Index> indicesByQuery = new ArrayList<>(getIndicesByQuery(queryLemmasSorted, siteId));
 
             List<Page> pageList = pageRepository.findByIdIn(indicesByQuery.stream().map(Index::getPageId).toList());
@@ -143,6 +157,7 @@ public class SearchingByQuery {
         }
 
         Collections.sort(dataList);
+        log.info(" ========== dataList.size() !!!========= " + dataList.size());
         return dataList;
     }
 
@@ -194,7 +209,7 @@ public class SearchingByQuery {
 
     private String getSnippet(Document doc){
 
-        String pageText = doc.body().text().replaceAll("[^а-яА-Яa-zA-Z]+"," ");
+        String pageText = doc.body().text().replaceAll("[^а-яА-ЯёЁa-zA-Z]+"," ");
 
         List<String> pageWords = Arrays
                 .stream(pageText.split("\\s+"))
@@ -268,16 +283,68 @@ public class SearchingByQuery {
     }
 
     private int getStartIndex(List<String> pageWords){
-        int result = pageWords.size();
+        int result = 0;
+        int queryWordsSize = wordsQuery.size();
+        int startIndex = 0;
+        List<String> pageWordsForms = getNormalFormWordsList(pageWords);
+        List<String> queryWordsForms = getNormalFormWordsList(wordsQuery);
+        TreeMap<Integer, String> wordsIndices = new TreeMap<>();
 
-        for(int i=0; i<wordsQuery.size(); i++){
-            String word = wordsQuery.get(i);
-            int curIndex = pageWords.indexOf(word);
-            if(curIndex > -1 && curIndex < result){
-                result = curIndex;
+        for(int i = 0; i < pageWordsForms.size(); i++){
+            if(queryWordsForms.contains(pageWordsForms.get(i))){
+                wordsIndices.put(i, pageWordsForms.get(i));
             }
         }
+        HashSet<String> wordPagePart;
+        for(Map.Entry<Integer, String> entry: wordsIndices.entrySet()){
+            startIndex = entry.getKey();
+            String curWord = entry.getValue();
+            wordPagePart = new HashSet<>(pageWordsForms.subList(startIndex, Integer.min(pageWordsForms.size(), startIndex + queryWordsSize + 1)));
+            boolean isFullCompliance = wordPagePart.containsAll(queryWordsForms);
+            if(isFullCompliance){
+                result = startIndex;
+                break;
+            }
+            boolean isAnyContains = queryWordsForms.contains(curWord);
+            if(result == 0 && isAnyContains){
+                result = startIndex;
+            }
+        }
+
         return result;
+    }
+
+    private List<String> getNormalFormWordsList(List<String> words) {
+        return words
+                .stream().filter(item -> !item.isEmpty())
+                .map(word -> {
+                    if(isCompositionValid(word)) {
+                        StringBuilder sbWord = new StringBuilder();
+                        String idRusWord = word.replaceAll("[^а-яА-ЯёЁ]", "");
+                        if (!idRusWord.isEmpty()) { // русское слово иначе английское
+                            List<String> nfList = new ArrayList<>();
+                            try {
+                                nfList.addAll(luceneMorphologyRu.getNormalForms(word));
+                                if (!nfList.isEmpty()) {
+                                    nfList.forEach(w -> sbWord.append(w));
+                                }
+                            } catch (Exception e) {
+                                System.out.println("ERROR ==== getNormalFormWordsList RUS + WORD : " + word.length() + " -- nfList - " + nfList.toString());
+                            }
+                        } else {
+                            List<String> nfList = new ArrayList<>();
+                            try {
+                                nfList.addAll(luceneMorphologyEn.getNormalForms(word));
+                                if (!nfList.isEmpty()) {
+                                    nfList.forEach(w -> sbWord.append(w));
+                                }
+                            } catch (Exception e) {
+                                System.out.println("ERROR ==== getNormalFormWordsList ENG + WORD : " + word.length());
+                            }
+                        }
+                        return sbWord.toString();
+                    } return "";
+                }).toList();
     }
 
     private List<String> getWordsRu(List<String> wdRu) throws IOException {
@@ -302,11 +369,28 @@ public class SearchingByQuery {
         for(String w: wdEn){
             String word = w.toLowerCase(Locale.ROOT).trim();
 
-            if (word.length() > 3) {
+            if (!isParticlesEng(w)) {
                 ListResult.add(word);
             }
         }
         return ListResult;
+    }
+    private  boolean isParticlesEng(String pageWord){
+        List<String> particles = new ArrayList<>(List.of("ARTICLE", "PN"));
+        for (String particle : particles) {
+            if (pageWord.contains(particle)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    static public boolean isCompositionValid(String word){
+        Pattern patRus = Pattern.compile("[а-яА-Я]");
+        Pattern patEng = Pattern.compile("[a-zA-Z]");
+        Matcher matcherRus = patRus.matcher(word);
+        Matcher matcherEng = patEng.matcher(word);
+
+        return !(matcherRus.find() && matcherEng.find());
     }
 
 }

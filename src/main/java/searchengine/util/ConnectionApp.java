@@ -1,14 +1,17 @@
-package searchengine.services;
+package searchengine.util;
 
 import lombok.Getter;
 import lombok.Setter;
 import org.jsoup.Jsoup;
 import org.jsoup.Connection.Response;
 import org.jsoup.nodes.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import searchengine.config.RequestResultError;
+import searchengine.services.ThreadParseSitesRunnerService;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -20,19 +23,18 @@ import java.sql.SQLException;
 @Setter
 public class ConnectionApp {
 
-    private final String dbName = "search_engine";
-    private final String bdUser = "skillbox";
-    private final String bdPwd = "skillbox";
-
-    private final String urlPatternHead = "^[htpsw.:/]+[a-zA-Z\\.]+\\.[a-z]+";
-    private final String urlPatternTail = "\\/[_\\-\\/a-z0-9]+$";
-    private final String urlPattern = "^[htps:/]+[w]{0,3}[\\.]{0,1}";
+    private String urlPatternHead = "^[htpsw.:/]+[a-zA-Z\\.]+\\.[a-z]+";
+    private String urlPatternTail = "\\/[_\\-\\/a-z0-9]+$";
+    private String urlPattern = "^[htps:/]+[w]{0,3}[\\.]{0,1}";
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(ThreadParseSite.class);
 
     public Connection getConnection() throws SQLException {
+        String url = getParamByKey("url").replaceAll("\\?+\\S+","");
+        String bdUser = getParamByKey("username");
+        String bdPwd = getParamByKey("password");
+
         return DriverManager.getConnection(
-                "jdbc:mysql://localhost:3306/" + dbName +
-                        "?user=" + bdUser +
-                        "&password=" + bdPwd
+                url.concat("?user=").concat(bdUser).concat("&password=").concat(bdPwd)
         );
     }
 
